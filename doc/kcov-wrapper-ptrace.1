@@ -1,0 +1,143 @@
+.\" SPDX-License-Identifier: GPL-2.0-only
+.\" kcov-wrapper-ptrace man page
+.\" Copyright (C) 2026  Kcov Wrapper Ptrace Contributors
+.TH KCOV-WRAPPER-PTRACE 1 "2026-04-30" "kcov-wrapper-ptrace 0.1.0"
+.SH NAME
+kcov-wrapper-ptrace \- collect KCOV coverage segmented by system calls
+.SH SYNOPSIS
+.B kcov-wrapper-ptrace
+[\fI\,OPTIONS\/\fR]
+\fI\,PROGRAM\/\fR
+[\fI\,ARGS\/\fR...]
+.SH DESCRIPTION
+.B kcov-wrapper-ptrace
+uses Linux
+.BR ptrace (2)
+to trace a target process at system-call granularity. At each
+system-call exit, it reads the KCOV shared buffer, deduplicates
+the program-counter (PC) addresses, and appends them to an output
+file annotated with the syscall number.
+
+After the target exits, a second pass produces a sorted, unique
+PC list suitable for coverage-guided fuzzing or kernel regression
+analysis.
+
+Unlike tools such as
+.BR kcov (1)
+or
+.BR perf (1),
+this tool attributes each PC to the specific system call that
+triggered it, enabling per-syscall coverage analysis.
+.SH OPTIONS
+.TP
+.BR \-o ", " \-\-output " \fIFILE\fR"
+Detailed output file with syscall annotations (default:
+.IR pcs_detailed.txt ).
+.TP
+.BR \-u ", " \-\-unique-output " \fIFILE\fR"
+Deduplicated unique PC output (default:
+.IR pcs.txt ).
+.TP
+.BR \-k ", " \-\-kcov-path " \fIPATH\fR"
+Path to the KCOV debugfs device (default:
+.IR /sys/kernel/debug/kcov ).
+Also settable via the
+.B KCOV_PATH
+environment variable.
+.TP
+.BR \-t ", " \-\-timeout " \fISEC\fR"
+Kill the traced process after
+.I SEC
+seconds. A value of 0 means no timeout.
+.TP
+.BR \-b ", " \-\-buffer-size " \fIN\fR"
+Number of entries in the KCOV shared buffer (default: 1048576).
+.TP
+.BR \-c ", " \-\-compact-threshold " \fIN\fR"
+Compaction threshold in GB (default: 1). When the detailed output
+file exceeds this size, it is compacted in-place: all (PC, syscall)
+pairs are read, sorted, deduplicated, and rewritten.
+.TP
+.BR \-v ", " \-\-verbose
+Print diagnostic information during collection.
+.TP
+.BR \-h ", " \-\-help
+Show help and exit.
+.TP
+.BR \-V ", " \-\-version
+Show version and exit.
+.SH OUTPUT
+.TP
+.I pcs_detailed.txt
+One PC per line with optional syscall annotation:
+.RS
+.PP
+0x\fIaddress\fR syscall=\fIN\fR
+.PP
+0x\fIaddress\fR syscall=\fIN1\fR,\fIN2\fR,...
+.RE
+.TP
+.I pcs.txt
+Sorted unique PC addresses, one per line:
+.RS
+.PP
+0x\fIaddress\fR
+.RE
+.SH EXAMPLES
+Trace
+.BR ls (1):
+.PP
+.RS
+kcov-wrapper-ptrace ls /
+.RE
+.PP
+Trace with custom output paths and verbose mode:
+.PP
+.RS
+kcov-wrapper-ptrace -o my_detailed.txt -u my_pcs.txt -v \\
+.RS
+/usr/bin/my-program --flag arg
+.RE
+.RE
+.PP
+Resolve PCs to symbols using
+.BR kcov-sym (1):
+.PP
+.RS
+kcov-sym /boot/vmlinux pcs.txt
+.RE
+.SH ENVIRONMENT
+.TP
+.B KCOV_PATH
+Default KCOV device path when
+.B \-\-kcov-path
+is not given.
+.SH REQUIREMENTS
+Linux kernel with
+.BR CONFIG_KCOV=y .
+.B debugfs
+mounted at
+.IR /sys/kernel/debug .
+Typically requires
+.B root
+or
+.BR CAP_SYS_PTRACE .
+.SH ARCHITECTURE SUPPORT
+RISC-V (riscv64), x86_64, and ARM64 (aarch64). ARM64 support is
+currently experimental.
+.SH FILES
+.TP
+.I /sys/kernel/debug/kcov
+Default KCOV device.
+.SH SEE ALSO
+.BR kcov-sym (1),
+.BR ptrace (2),
+.BR kcov (1),
+.BR perf (1)
+.br
+.UR https://\:github.\:com/\:6eanut/\:kcov-wrapper-ptrace
+.UE
+.SH BUGS
+Report bugs at
+.UR https://\:github.\:com/\:6eanut/\:kcov-wrapper-ptrace\:/issues
+.UE

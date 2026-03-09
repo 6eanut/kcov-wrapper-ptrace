@@ -1,0 +1,29 @@
+# Build artifacts
+*.o
+*.a
+*.so
+kcov-wrapper-ptrace
+
+# Output files
+pcs.txt
+pcs_detailed.txt
+files.txt
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Testing
+build/
+*.gcda
+*.gcno
+*.gcov
+*.out

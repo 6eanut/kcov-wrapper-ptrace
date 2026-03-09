@@ -1,0 +1,20 @@
+---
+# kcov-wrapper-ptrace — clang-format configuration
+# Based on Linux kernel style
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: ForIndentation
+ColumnLimit: 80
+BreakBeforeBraces: Linux
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+IndentCaseLabels: false
+AlignAfterOpenBracket: Align
+AlignOperands: true
+PointerAlignment: Right
+SpaceAfterCStyleCast: false
+CommentPragmas: '^ SPDX-'
+IncludeBlocks: Preserve
+SortIncludes: false

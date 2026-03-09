@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Build matrix across compilers ──────────────────────────────────
+  build:
+    name: Build (${{ matrix.compiler }}, ${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        target: [native, riscv64, x86_64, arm64]
+        exclude:
+          - compiler: clang
+            target: riscv64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross-compilers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            gcc-riscv64-linux-gnu \
+            gcc-aarch64-linux-gnu \
+            gcc-x86-64-linux-gnu
+
+      - name: Configure compiler
+        id: cc
+        run: |
+          case "${{ matrix.target }}" in
+            native)
+              echo "CC=${{ matrix.compiler }}" >> $GITHUB_OUTPUT
+              ;;
+            riscv64)
+              echo "CC=riscv64-linux-gnu-gcc" >> $GITHUB_OUTPUT
+              ;;
+            x86_64)
+              echo "CC=x86_64-linux-gnu-gcc" >> $GITHUB_OUTPUT
+              ;;
+            arm64)
+              echo "CC=aarch64-linux-gnu-gcc" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Build
+        run: make CC=${{ steps.cc.outputs.CC }}
+
+  # ── Lint ───────────────────────────────────────────────────────────
+  lint:
+    name: Lint (cppcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cppcheck
+        run: sudo apt-get install -y -qq cppcheck
+      - name: Run cppcheck
+        run: make cppcheck
+
+  # ── Python syntax check ────────────────────────────────────────────
+  python-check:
+    name: Python syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Python syntax
+        run: python3 -m py_compile src/kcov-sym.py
+
+  # ── Tests (placeholder) ────────────────────────────────────────────
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: make test CC=gcc CFLAGS="-O0 -Wall -Wextra -std=gnu11"
